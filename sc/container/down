@@ -16,8 +16,26 @@ fi
 
 image_ids=()
 for container_id in "${container_ids[@]}"; do
-  image_ids+=("$(docker inspect --format '{{.Image}}' "$container_id")")
+  image_id=$(docker inspect --format '{{.Image}}' "$container_id")
+  image_is_known=false
+  for known_image_id in "${image_ids[@]}"; do
+    if [ "$known_image_id" = "$image_id" ]; then
+      image_is_known=true
+      break
+    fi
+  done
+  if [ "$image_is_known" = false ]; then
+    image_ids+=("$image_id")
+  fi
 done
 
 docker container rm --force "${container_ids[@]}"
-docker image rm "${image_ids[@]}"
+
+for image_id in "${image_ids[@]}"; do
+  remaining_containers=$(docker ps -aq --filter "ancestor=$image_id")
+  if [ -n "$remaining_containers" ]; then
+    echo "Keeping image $image_id because another container uses it"
+  else
+    docker image rm "$image_id"
+  fi
+done
