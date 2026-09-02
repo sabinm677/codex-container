@@ -4,20 +4,41 @@ set -euo pipefail
 
 script_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)
 workspace=$(cd "$script_dir/../.." && pwd -P)
-volume_names=()
 
-while IFS= read -r volume_name; do
-  [ -n "$volume_name" ] && volume_names+=("$volume_name")
-done < <(
-  devcontainer read-configuration --workspace-folder "$workspace" 2>/dev/null |
-    jq -r '.configuration.mounts[] | select(type == "string" and contains("type=volume")) | capture("(^|,)source=(?<source>[^,]+)").source'
+if ! command -v node >/dev/null 2>&1; then
+  echo "Error: node is required to resolve the Dev Container volume names." >&2
+  exit 1
+fi
+
+devcontainer_id=$(node -e '
+  const crypto = require("crypto");
+  const workspace = process.argv[1];
+  const labels = {
+    "devcontainer.local_folder": workspace,
+    "devcontainer.config_file": `${workspace}/.devcontainer/devcontainer.json`,
+  };
+  const input = JSON.stringify(labels, Object.keys(labels).sort());
+  const hash = crypto.createHash("sha256").update(input).digest("hex");
+  process.stdout.write(BigInt(`0x${hash}`).toString(32).padStart(52, "0"));
+' "$workspace")
+
+volume_names=(
+  "codex-bashhistory-$devcontainer_id"
+  "codex-config-$devcontainer_id"
 )
 
 "$script_dir/down"
 
-if [ "${#volume_names[@]}" -eq 0 ]; then
+existing_volume_names=()
+for volume_name in "${volume_names[@]}"; do
+  if docker volume inspect "$volume_name" >/dev/null 2>&1; then
+    existing_volume_names+=("$volume_name")
+  fi
+done
+
+if [ "${#existing_volume_names[@]}" -eq 0 ]; then
   echo "No named dev container volumes found for $workspace"
   exit 0
 fi
 
-docker volume rm "${volume_names[@]}"
+docker volume rm "${existing_volume_names[@]}"
