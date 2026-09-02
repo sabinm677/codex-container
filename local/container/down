@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+workspace=$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd -P)
+container_ids=()
+
+while IFS= read -r container_id; do
+  [ -n "$container_id" ] && container_ids+=("$container_id")
+done < <(docker ps -aq --filter "label=devcontainer.local_folder=$workspace")
+
+if [ "${#container_ids[@]}" -eq 0 ]; then
+  echo "No dev container found for $workspace"
+  exit 0
+fi
+
+image_ids=()
+for container_id in "${container_ids[@]}"; do
+  image_ids+=("$(docker inspect --format '{{.Image}}' "$container_id")")
+done
+
+docker container rm --force "${container_ids[@]}"
+docker image rm "${image_ids[@]}"

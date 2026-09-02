@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+script_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)
+workspace=$(cd "$script_dir/../.." && pwd -P)
+volume_names=()
+
+while IFS= read -r volume_name; do
+  [ -n "$volume_name" ] && volume_names+=("$volume_name")
+done < <(
+  devcontainer read-configuration --workspace-folder "$workspace" 2>/dev/null |
+    jq -r '.configuration.mounts[] | select(type == "string" and contains("type=volume")) | capture("(^|,)source=(?<source>[^,]+)").source'
+)
+
+"$script_dir/down"
+
+if [ "${#volume_names[@]}" -eq 0 ]; then
+  echo "No named dev container volumes found for $workspace"
+  exit 0
+fi
+
+docker volume rm "${volume_names[@]}"
