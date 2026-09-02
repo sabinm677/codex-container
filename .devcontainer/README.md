@@ -2,6 +2,14 @@
 
 A boilerplate project for running Codex CLI in a network-restricted devcontainer.
 
+Install it into the current Git repository:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/sabinm677/codex-container/develop/install.sh | bash
+```
+
+The installer refuses to overwrite existing `.devcontainer` or `local` directories.
+
 Start and connect to the container:
 
 ```sh
