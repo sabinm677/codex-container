@@ -18,12 +18,14 @@ image_ids=()
 for container_id in "${container_ids[@]}"; do
   image_id=$(docker inspect --format '{{.Image}}' "$container_id")
   image_is_known=false
-  for known_image_id in "${image_ids[@]}"; do
-    if [ "$known_image_id" = "$image_id" ]; then
-      image_is_known=true
-      break
-    fi
-  done
+  if [ "${#image_ids[@]}" -gt 0 ]; then
+    for known_image_id in "${image_ids[@]}"; do
+      if [ "$known_image_id" = "$image_id" ]; then
+        image_is_known=true
+        break
+      fi
+    done
+  fi
   if [ "$image_is_known" = false ]; then
     image_ids+=("$image_id")
   fi
