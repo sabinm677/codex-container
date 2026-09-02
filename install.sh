@@ -11,7 +11,7 @@ if ! git -C "$destination" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
   exit 1
 fi
 
-for path in .devcontainer local; do
+for path in .devcontainer sc; do
   if [ -e "$destination/$path" ]; then
     echo "Error: $destination/$path already exists; refusing to overwrite it." >&2
     exit 1
@@ -23,10 +23,10 @@ trap 'rm -rf "$temporary_directory"' EXIT
 
 git clone --depth 1 --filter=blob:none --sparse --branch "$repository_ref" \
   "$repository" "$temporary_directory/repository"
-git -C "$temporary_directory/repository" sparse-checkout set .devcontainer local
+git -C "$temporary_directory/repository" sparse-checkout set .devcontainer sc
 cp -R \
   "$temporary_directory/repository/.devcontainer" \
-  "$temporary_directory/repository/local" \
+  "$temporary_directory/repository/sc" \
   "$destination/"
 
-echo "Installed .devcontainer and local into $destination"
+echo "Installed .devcontainer and sc into $destination"
