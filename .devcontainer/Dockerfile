@@ -1,4 +1,4 @@
-FROM node:20
+FROM node:26.8.1
 
 ARG TZ
 ENV TZ="$TZ"
@@ -59,7 +59,7 @@ USER node
 
 # Install global packages
 ENV NPM_CONFIG_PREFIX=/usr/local/share/npm-global
-ENV PATH=$PATH:/usr/local/share/npm-global/bin
+ENV PATH=/usr/local/share/npm-global/bin:$PATH
 
 # Set the default shell to zsh rather than sh
 ENV SHELL=/bin/zsh
@@ -79,6 +79,7 @@ RUN sh -c "$(wget -O- https://github.com/deluan/zsh-in-docker/releases/download/
   -x
 
 # Install Codex CLI
+RUN npm install -g npm@12.0.2
 RUN npm install -g @openai/codex
 
 # Copy and set up firewall script
